@@ -45,9 +45,27 @@ sequenceDiagram
 ### Prerequisites
 
 - Go 1.20+
+- [Tilt](https://tilt.dev/) (for local Kubernetes dev)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/)
+- Docker (for image builds and as a container runtime)
+- A local Kubernetes cluster (e.g. Docker Desktop, minikube, or [Colima](https://github.com/abiosoft/colima))
 - `jq` (for demo script)
 
-### Build & Run
+### Local Development with Tilt & Kubernetes
+
+Start your local Kubernetes cluster (e.g. Docker Desktop, minikube, or Colima with `colima start --kubernetes`).
+
+#### Tilt Make Targets
+
+You can use Makefile targets for common Tilt workflows:
+
+- `make tilt-up` — start Tilt for local development
+- `make tilt-down` — stop Tilt and clean up
+- `make tilt-ci` — run Tilt in CI/headless mode
+
+This will build the image, apply manifests from `deploy/`, and port-forward to [localhost:8080](http://localhost:8080).
+
+### Build & Run (Standalone)
 
 ```sh
 make build
@@ -62,6 +80,8 @@ go run ./cmd/server
 
 ### API Endpoints
 
+- `GET    /`              - Service info `{ "service": "taskmanager" }`
+- `GET    /healthz`       - Health check `{ "ok": true }`
 - `GET    /tasks`         - List all tasks
 - `POST   /tasks`         - Create a new task
 - `GET    /tasks/{id}`    - Get a task by ID
@@ -87,6 +107,28 @@ Run the provided demo script to see the API in action:
 bash demo_tasks.sh
 ```
 
+### Docker
+
+Build and scan the image:
+
+```sh
+docker build -t taskmanager:dev .
+trivy image taskmanager:dev
+```
+
+### Kubernetes Manifests
+
+Kubernetes manifests are in `deploy/`:
+
+- `deploy/deployment.yaml` (with liveness/readiness probes)
+- `deploy/service.yaml`
+
+Apply to any cluster:
+
+```sh
+kubectl apply -f deploy/
+```
+
 ## Testing
 
 Run all tests:
@@ -101,10 +143,13 @@ Or:
 go test ./...
 ```
 
-## Development
+## Project Structure
 
 - Main entry: `cmd/server/main.go`
 - Handlers: `internal/handler/`
 - Services: `internal/service/`
 - Repository: `internal/repository/`
 - Models: `internal/model/`
+- Kubernetes: `deploy/`
+- Docker ignore: `.dockerignore`
+- Tiltfile: `Tiltfile`

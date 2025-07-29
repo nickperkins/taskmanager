@@ -1,3 +1,14 @@
+# Tilt targets
+.PHONY: tilt-up tilt-down tilt-ci
+
+tilt-up:
+	tilt up
+
+tilt-down:
+	tilt down
+
+tilt-ci:
+	tilt ci
 # Makefile for Task Management API
 
 .PHONY: all build test lint fmt run clean coverage coverage-html
@@ -25,6 +36,14 @@ run:
 
 clean:
 	rm -rf bin/
+
+# Build Docker image
+docker-build:
+	docker build -t taskmanager:latest .
+
+# Scan Docker image with Trivy
+docker-scan:
+	trivy image --exit-code 1 --severity CRITICAL,HIGH taskmanager:latest
 
 # Run tests with coverage and output coverage.out
 coverage:

@@ -1,0 +1,14 @@
+.git
+.github
+deploy/
+k8s/
+test/
+tests/
+*.test
+.DS_Store
+*.md
+.env
+coverage.out
+bin/
+Makefile
+Tiltfile
