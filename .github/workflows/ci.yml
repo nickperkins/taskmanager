@@ -18,18 +18,27 @@ jobs:
         with:
           go-version: "stable"
 
+      - name: Clean Go build and mod cache (before)
+        run: go clean -cache -modcache
+
       - name: Cache Go modules
         uses: actions/cache@v4
         with:
           path: |
             ~/.cache/go-build
             ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          key: ${{ runner.os }}-go-${{ steps.setup-go.outputs.go-version }}-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - name: Install dependencies
-        run: go mod download
+      - name: Clean Go build and mod cache (after)
+        run: go clean -cache -modcache
+
+
+      - name: Check go.mod/go.sum (tidy)
+        run: |
+          go mod tidy
+          git diff --exit-code go.mod go.sum
 
       - name: Check formatting (go fmt)
         run: |
@@ -50,7 +59,7 @@ jobs:
         run: ~/go/bin/staticcheck ./...
 
       - name: Run tests
-        run: go test -v ./...
+        run: go test -v -race -cover ./...
 
       - name: Upload coverage report
         run: |
