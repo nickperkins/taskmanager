@@ -21,10 +21,14 @@ func main() {
 
 	repo := repository.NewInMemoryTaskRepository(logger)
 	svc := service.NewTaskService(repo, logger)
-	h := handler.NewTaskHandler(svc, logger)
+	taskHandler := handler.NewTaskHandler(svc, logger)
+	serviceHandler := handler.NewServiceHandler()
+	healthHandler := handler.NewHealthHandler()
 
 	mux := http.NewServeMux()
-	h.RegisterRoutes(mux)
+	serviceHandler.RegisterRoutes(mux)
+	healthHandler.RegisterRoutes(mux)
+	taskHandler.RegisterRoutes(mux)
 
 	srv := &http.Server{
 		Addr:    ":8080",

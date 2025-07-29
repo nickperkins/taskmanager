@@ -1,3 +1,14 @@
+# Tilt targets
+.PHONY: tilt-up tilt-down tilt-ci
+
+tilt-up:
+	tilt up
+
+tilt-down:
+	tilt down
+
+tilt-ci:
+	tilt ci
 # Makefile for Task Management API
 
 .PHONY: all build test lint fmt run clean coverage coverage-html
