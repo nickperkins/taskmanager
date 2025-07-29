@@ -26,6 +26,14 @@ run:
 clean:
 	rm -rf bin/
 
+# Build Docker image
+docker-build:
+	docker build -t taskmanager:latest .
+
+# Scan Docker image with Trivy
+docker-scan:
+	trivy image --exit-code 1 --severity CRITICAL,HIGH taskmanager:latest
+
 # Run tests with coverage and output coverage.out
 coverage:
 	go test -coverprofile=coverage.out ./...
