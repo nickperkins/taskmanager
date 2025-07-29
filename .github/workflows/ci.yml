@@ -81,17 +81,14 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/taskmanager
           tags: |
-            type=ref,event=branch
-            type=ref,event=pr
             type=sha,prefix=sha-
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
 
       - name: Build Docker image
         uses: docker/build-push-action@v5
         with:
           context: .
           load: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta.outputs.sha }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -102,7 +99,7 @@ jobs:
         uses: aquasecurity/trivy-action@0.32.0
         with:
           scan-type: "image"
-          image-ref: ${{ fromJson(steps.meta.outputs.json).tags[0] }}
+          image-ref: ${{ steps.meta.outputs.sha }}
           exit-code: "1"
           severity: "CRITICAL,HIGH"
 
@@ -111,7 +108,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: ${{ steps.meta.outputs.sha }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
