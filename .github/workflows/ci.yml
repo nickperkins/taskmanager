@@ -16,7 +16,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-            go-version: "1.24"
+          go-version: "1.24"
 
       - name: Clean Go build and mod cache (before)
         run: go clean -cache -modcache
@@ -33,7 +33,6 @@ jobs:
 
       - name: Clean Go build and mod cache (after)
         run: go clean -cache -modcache
-
 
       - name: Check go.mod/go.sum (tidy)
         run: |
@@ -85,7 +84,6 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-
       - name: Build Docker image (local, for scan)
         uses: docker/build-push-action@v5
         with:
@@ -95,11 +93,6 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           platforms: linux/amd64
-
-      - name: List local Docker images (debug)
-        run: docker images
-
-
 
       - name: Run Trivy vulnerability scanner
         id: trivy
