@@ -1,3 +1,4 @@
+
 package handler
 
 import (
@@ -10,6 +11,8 @@ import (
 	"taskmanager/internal/service"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
 
@@ -29,30 +32,22 @@ func TestIntegration_CreateAndGetTask(t *testing.T) {
 	r := httptest.NewRequest(http.MethodPost, "/tasks", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, r)
-	if w.Code != http.StatusCreated {
-		t.Fatalf("expected 201, got %d", w.Code)
-	}
+	require.Equal(t, http.StatusCreated, w.Code, "expected 201 Created")
 	var created model.Task
-	json.NewDecoder(w.Body).Decode(&created)
-	if created.ID == "" {
-		t.Error("expected non-empty ID")
-	}
-	if created.Title != task.Title {
-		t.Errorf("expected title %q, got %q", task.Title, created.Title)
-	}
+	err := json.NewDecoder(w.Body).Decode(&created)
+	require.NoError(t, err, "decoding created task")
+	assert.NotEmpty(t, created.ID, "expected non-empty ID")
+	assert.Equal(t, task.Title, created.Title, "expected title to match")
 
 	// Now GET the created task
 	r2 := httptest.NewRequest(http.MethodGet, "/tasks/"+created.ID, nil)
 	w2 := httptest.NewRecorder()
 	mux.ServeHTTP(w2, r2)
-	if w2.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d", w2.Code)
-	}
+	require.Equal(t, http.StatusOK, w2.Code, "expected 200 OK")
 	var fetched model.Task
-	json.NewDecoder(w2.Body).Decode(&fetched)
-	if fetched.ID != created.ID {
-		t.Errorf("expected ID %v, got %v", created.ID, fetched.ID)
-	}
+	err = json.NewDecoder(w2.Body).Decode(&fetched)
+	require.NoError(t, err, "decoding fetched task")
+	assert.Equal(t, created.ID, fetched.ID, "expected ID to match")
 }
 
 func TestIntegration_ListTasks(t *testing.T) {
@@ -63,21 +58,16 @@ func TestIntegration_ListTasks(t *testing.T) {
 	r := httptest.NewRequest(http.MethodPost, "/tasks", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, r)
-	if w.Code != http.StatusCreated {
-		t.Fatalf("expected 201, got %d", w.Code)
-	}
+	require.Equal(t, http.StatusCreated, w.Code, "expected 201 Created")
 	// List tasks
 	r2 := httptest.NewRequest(http.MethodGet, "/tasks", nil)
 	w2 := httptest.NewRecorder()
 	mux.ServeHTTP(w2, r2)
-	if w2.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d", w2.Code)
-	}
+	require.Equal(t, http.StatusOK, w2.Code, "expected 200 OK")
 	var tasks []model.Task
-	json.NewDecoder(w2.Body).Decode(&tasks)
-	if len(tasks) == 0 {
-		t.Error("expected at least one task")
-	}
+	err := json.NewDecoder(w2.Body).Decode(&tasks)
+	require.NoError(t, err, "decoding tasks list")
+	assert.NotEmpty(t, tasks, "expected at least one task")
 }
 
 func TestIntegration_UpdateAndDeleteTask(t *testing.T) {
@@ -88,39 +78,31 @@ func TestIntegration_UpdateAndDeleteTask(t *testing.T) {
 	r := httptest.NewRequest(http.MethodPost, "/tasks", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, r)
-	if w.Code != http.StatusCreated {
-		t.Fatalf("expected 201, got %d", w.Code)
-	}
+	require.Equal(t, http.StatusCreated, w.Code, "expected 201 Created")
 	var created model.Task
-	json.NewDecoder(w.Body).Decode(&created)
+	err := json.NewDecoder(w.Body).Decode(&created)
+	require.NoError(t, err, "decoding created task")
 	// Update
 	update := &model.Task{Title: "Updated Title", Completed: true}
 	updateBody, _ := json.Marshal(update)
 	r2 := httptest.NewRequest(http.MethodPut, "/tasks/"+created.ID, bytes.NewReader(updateBody))
 	w2 := httptest.NewRecorder()
 	mux.ServeHTTP(w2, r2)
-	if w2.Code != http.StatusOK {
-		t.Fatalf("expected 200, got %d", w2.Code)
-	}
+	require.Equal(t, http.StatusOK, w2.Code, "expected 200 OK")
 	var updated model.Task
-	json.NewDecoder(w2.Body).Decode(&updated)
-	if updated.Title != "Updated Title" {
-		t.Errorf("expected updated title, got %q", updated.Title)
-	}
+	err = json.NewDecoder(w2.Body).Decode(&updated)
+	require.NoError(t, err, "decoding updated task")
+	assert.Equal(t, "Updated Title", updated.Title, "expected updated title")
 	// Delete
 	r3 := httptest.NewRequest(http.MethodDelete, "/tasks/"+created.ID, nil)
 	w3 := httptest.NewRecorder()
 	mux.ServeHTTP(w3, r3)
-	if w3.Code != http.StatusNoContent {
-		t.Fatalf("expected 204, got %d", w3.Code)
-	}
+	require.Equal(t, http.StatusNoContent, w3.Code, "expected 204 No Content")
 	// Confirm deleted
 	r4 := httptest.NewRequest(http.MethodGet, "/tasks/"+created.ID, nil)
 	w4 := httptest.NewRecorder()
 	mux.ServeHTTP(w4, r4)
-	if w4.Code != http.StatusNotFound {
-		t.Fatalf("expected 404 after delete, got %d", w4.Code)
-	}
+	require.Equal(t, http.StatusNotFound, w4.Code, "expected 404 after delete")
 }
 
 func TestIntegration_CreateTask_ValidationError(t *testing.T) {
@@ -130,14 +112,11 @@ func TestIntegration_CreateTask_ValidationError(t *testing.T) {
 	r := httptest.NewRequest(http.MethodPost, "/tasks", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, r)
-	if w.Code != http.StatusBadRequest {
-		t.Fatalf("expected 400, got %d", w.Code)
-	}
+	require.Equal(t, http.StatusBadRequest, w.Code, "expected 400 Bad Request")
 	var resp map[string]interface{}
-	json.NewDecoder(w.Body).Decode(&resp)
-	if _, ok := resp["error"]; !ok {
-		t.Error("expected error in response")
-	}
+	err := json.NewDecoder(w.Body).Decode(&resp)
+	require.NoError(t, err, "decoding error response")
+	assert.Contains(t, resp, "error", "expected error in response")
 }
 
 func TestIntegration_CreateTask_WithUserSuppliedID(t *testing.T) {
@@ -148,15 +127,10 @@ func TestIntegration_CreateTask_WithUserSuppliedID(t *testing.T) {
 	r := httptest.NewRequest(http.MethodPost, "/tasks", bytes.NewReader(body))
 	w := httptest.NewRecorder()
 	mux.ServeHTTP(w, r)
-	if w.Code != http.StatusCreated {
-		t.Fatalf("expected 201, got %d", w.Code)
-	}
+	require.Equal(t, http.StatusCreated, w.Code, "expected 201 Created")
 	var created model.Task
-	json.NewDecoder(w.Body).Decode(&created)
-	if created.ID != userID {
-		t.Errorf("expected ID %q, got %q", userID, created.ID)
-	}
-	if created.Title != "Integration with user ID" {
-		t.Errorf("expected title %q, got %q", "Integration with user ID", created.Title)
-	}
+	err := json.NewDecoder(w.Body).Decode(&created)
+	require.NoError(t, err, "decoding created task")
+	assert.Equal(t, userID, created.ID, "expected ID to match user supplied ID")
+	assert.Equal(t, "Integration with user ID", created.Title, "expected title to match")
 }
